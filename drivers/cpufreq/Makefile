@@ -73,6 +73,8 @@ obj-$(CONFIG_ARM_SA1100_CPUFREQ)	+= sa1100-cpufreq.o
 obj-$(CONFIG_ARM_SA1110_CPUFREQ)	+= sa1110-cpufreq.o
 obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
 obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
+obj-$(CONFIG_ARM_RDA_CPUFREQ)     	+= rda-cpufreq.o
+CFLAGS_rda-cpufreq.o := -I$(ANDROID_BUILD_TOP)/$(RDA_TARGET_DEVICE_DIR)/include
 
 ##################################################################################
 # PowerPC platform drivers
