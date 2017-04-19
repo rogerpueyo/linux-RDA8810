@@ -158,7 +158,10 @@ struct ion_heap *ion_carveout_heap_create(struct ion_platform_heap *heap_data)
 	page = pfn_to_page(PFN_DOWN(heap_data->base));
 	size = heap_data->size;
 
+	/* We do not sync memory to device, because we are using a reserved area. */
+#if 0
 	ion_pages_sync_for_device(NULL, page, size, DMA_BIDIRECTIONAL);
+#endif /* #if 0 */
 
 	ret = ion_heap_pages_zero(page, size, pgprot_writecombine(PAGE_KERNEL));
 	if (ret)

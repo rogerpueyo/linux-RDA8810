@@ -26,6 +26,7 @@
 #include <linux/sched.h>
 #include <linux/shrinker.h>
 #include <linux/types.h>
+#include <linux/device.h>
 
 #include "ion.h"
 
@@ -207,7 +208,8 @@ bool ion_buffer_fault_user_mappings(struct ion_buffer *buffer);
 struct ion_device *ion_device_create(long (*custom_ioctl)
 				     (struct ion_client *client,
 				      unsigned int cmd,
-				      unsigned long arg));
+				      unsigned long arg,
+				      void *ptr));
 
 /**
  * ion_device_destroy - free and device and it's resource

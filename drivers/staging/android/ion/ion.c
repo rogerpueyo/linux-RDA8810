@@ -56,7 +56,7 @@ struct ion_device {
 	struct rw_semaphore lock;
 	struct plist_head heaps;
 	long (*custom_ioctl) (struct ion_client *client, unsigned int cmd,
-			      unsigned long arg);
+			      unsigned long arg, void *prt);
 	struct rb_root clients;
 	struct dentry *debug_root;
 	struct dentry *heaps_debug_root;
@@ -1217,7 +1217,9 @@ static unsigned int ion_ioctl_dir(unsigned int cmd)
 	switch (cmd) {
 	case ION_IOC_SYNC:
 	case ION_IOC_FREE:
+#if 0
 	case ION_IOC_CUSTOM:
+#endif /* #if 0 */
 		return _IOC_WRITE;
 	default:
 		return _IOC_DIR(cmd);
@@ -1307,10 +1309,14 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	}
 	case ION_IOC_CUSTOM:
 	{
+		struct ion_handle *handle;
+
 		if (!dev->custom_ioctl)
 			return -ENOTTY;
-		ret = dev->custom_ioctl(client, data.custom.cmd,
-						data.custom.arg);
+
+		handle = ion_handle_get_by_id(client, (int)data.custom.arg);
+		ret = dev->custom_ioctl(client, data.custom.cmd, (unsigned long)handle, &data.custom);
+		ion_handle_put(handle);
 		break;
 	}
 	default:
@@ -1545,7 +1551,8 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 struct ion_device *ion_device_create(long (*custom_ioctl)
 				     (struct ion_client *client,
 				      unsigned int cmd,
-				      unsigned long arg))
+				      unsigned long arg,
+				      void *ptr))
 {
 	struct ion_device *idev;
 	int ret;
