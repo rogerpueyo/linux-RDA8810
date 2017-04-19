@@ -40,6 +40,10 @@
 #include "rndis.c"
 #include "u_ether.c"
 
+#ifdef CONFIG_RDA_USB_F_MLOG
+#include "f_mlog.c"
+#endif
+
 MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");
 MODULE_LICENSE("GPL");
@@ -99,6 +103,10 @@ struct android_dev {
 	char ffs_aliases[256];
 };
 
+extern void rda_vbus_acquire(void);
+extern void rda_vbus_release(void);
+
+static int charge_usb;
 static struct class *android_class;
 static struct android_dev *_android_dev;
 static int android_bind_config(struct usb_configuration *c);
@@ -445,11 +453,13 @@ err_usb_add_function:
 static void acm_function_unbind_config(struct android_usb_function *f,
 				       struct usb_configuration *c)
 {
+/*
 	int i;
 	struct acm_function_config *config = f->config;
 
 	for (i = 0; i < config->instances_on; i++)
 		usb_remove_function(c, config->f_acm[i]);
+*/
 }
 
 static ssize_t acm_instances_show(struct device *dev,
@@ -930,6 +940,104 @@ static struct android_usb_function audio_source_function = {
 	.attributes	= audio_source_function_attributes,
 };
 
+static int charge_only_function_init(struct android_usb_function *f,
+				struct usb_composite_dev *cdev)
+{
+	return 0;
+}
+
+static void charge_only_function_enable(struct android_usb_function *f)
+{
+	struct android_dev *dev = _android_dev;
+	char *connected[2] = { "USB_STATE=CONNECTED", NULL };
+	kobject_uevent_env(&dev->dev->kobj, KOBJ_CHANGE, connected);
+	rda_vbus_release();
+	charge_usb = 1;
+}
+
+static void charge_only_function_disable(struct android_usb_function *f)
+{
+	rda_vbus_acquire();
+}
+
+static int charge_only_function_bind_config(struct android_usb_function *f,
+					struct usb_configuration *c)
+{
+	return 0;
+}
+
+static struct android_usb_function charge_only_function = {
+	.name		= "charge_only",
+	.init		= charge_only_function_init,
+	.enable		= charge_only_function_enable,
+	.disable	= charge_only_function_disable,
+	.bind_config	= charge_only_function_bind_config,
+};
+
+#ifdef CONFIG_RDA_USB_F_MLOG
+static ssize_t mlog_bp_trace_show(struct device *dev,
+                                struct device_attribute *attr, char *buf)
+{
+	unsigned int status;
+
+	if (mlog_send_msys_cmd(MSYS_QUERY_TRACE_STATUS, &status) == -1) {
+		pr_err("<trace-ch> : failed as getting status of trace channel!\n");
+	}
+
+	return sprintf(buf, "%d\n", status);
+}
+
+static ssize_t mlog_bp_trace_store(struct device *dev,
+                struct device_attribute *attr, const char *buf, size_t size)
+{
+	int trace;
+	unsigned int ret;
+
+	ret = kstrtoint(buf, 0, &trace);
+	if (ret) {
+		pr_err("%s, kstrtoint err!,%d\n", __func__, ret);
+		return size;
+	}
+
+	if (mlog_send_msys_cmd(MSYS_ENABLE_TRACE, &trace) == -1) {
+		pr_err("%s : failed as %s log of bp!\n", __func__,
+					!!trace ? "enable" : "disable");
+	}
+
+    return size;
+}
+
+static DEVICE_ATTR(bp_trace, S_IRUGO | S_IWUSR | S_IWGRP,
+					mlog_bp_trace_show,
+					mlog_bp_trace_store);
+
+static struct device_attribute *mlog_function_attributes[] = {
+	&dev_attr_bp_trace,
+	NULL
+};
+
+static int mlog_function_bind_config(struct android_usb_function *f,
+					struct usb_configuration *c)
+{
+	int ret = -1;
+	struct mlog_dev * mlog;
+
+	mlog = mlog_bind_config(c);
+	if(mlog)
+		ret = 0;
+
+	f->config = mlog;
+
+	return ret;
+}
+
+static struct android_usb_function mlog_function = {
+	.name = "mlog",
+	.bind_config = mlog_function_bind_config,
+	.attributes	= mlog_function_attributes,
+};
+#endif
+
 static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
 	&acm_function,
@@ -939,6 +1047,10 @@ static struct android_usb_function *supported_functions[] = {
 	&mass_storage_function,
 	&accessory_function,
 	&audio_source_function,
+	&charge_only_function,
+#ifdef CONFIG_RDA_USB_F_MLOG
+	&mlog_function,
+#endif
 	NULL
 };
 
@@ -1146,6 +1258,7 @@ static ssize_t enable_show(struct device *pdev, struct device_attribute *attr,
 	return sprintf(buf, "%d\n", dev->enabled);
 }
 
+static int usb_ready = 0;
 static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 			    const char *buff, size_t size)
 {
@@ -1158,6 +1271,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 	if (!cdev)
 		return -ENODEV;
 
+	usb_ready = 1;
 	mutex_lock(&dev->mutex);
 
 	sscanf(buff, "%d", &enabled);
@@ -1178,6 +1292,9 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		}
 		android_enable(dev);
 		dev->enabled = true;
+		if (!dev->connected && charge_usb) {
+			rda_vbus_release();
+		}
 	} else if (!enabled && dev->enabled) {
 		android_disable(dev);
 		list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
@@ -1457,6 +1574,11 @@ static int android_create_device(struct android_dev *dev)
 	return 0;
 }
 
+int android_usb_ready(void)
+{
+	return usb_ready;
+}
+EXPORT_SYMBOL_GPL(android_usb_ready);
 
 static int __init init(void)
 {
