@@ -73,6 +73,8 @@ static inline void gic_init(unsigned int nr, int start,
 	gic_init_bases(nr, start, dist, cpu, 0, NULL);
 }
 
+void rda_gic_set_gicc_enabled(int enabled);
+
 #endif /* __ASSEMBLY */
 
 #endif
