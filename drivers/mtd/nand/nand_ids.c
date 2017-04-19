@@ -11,6 +11,13 @@
 #include <linux/module.h>
 #include <linux/mtd/nand.h>
 #include <linux/sizes.h>
+#ifdef CONFIG_ARCH_RDA
+#include "tgt_ap_board_config.h"
+
+#if defined(CONFIG_MTD_NAND_RDA_V1) && !defined(_TGT_AP_NAND_DISABLE_HEC)
+#define RDA_NAND_WITH_HEC
+#endif
+#endif
 
 #define LP_OPTIONS NAND_SAMSUNG_LP_OPTIONS
 #define LP_OPTIONS16 (LP_OPTIONS | NAND_BUSWIDTH_16)

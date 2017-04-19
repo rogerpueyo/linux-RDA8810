@@ -57,7 +57,7 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
  * adjust this accordingly.
  */
 #define NAND_MAX_OOBSIZE	640
-#define NAND_MAX_PAGESIZE	8192
+#define NAND_MAX_PAGESIZE 16384
 
 /*
  * Constants for hardware specific CLE/ALE/NCE function
@@ -165,6 +165,9 @@ typedef enum {
 
 /* Device supports subpage reads */
 #define NAND_SUBPAGE_READ	0x00001000
+
+/* Option for RDA HEC nand devices */
+#define NAND_RDA_HEC		0x00002000
 
 /* Options valid for Samsung large page devices */
 #define NAND_SAMSUNG_LP_OPTIONS NAND_CACHEPRG
@@ -552,6 +555,9 @@ struct nand_chip {
 
 /* The maximum expected count of bytes in the NAND ID sequence */
 #define NAND_MAX_ID_LEN 8
+
+#define NAND_MFR_ESMT		0xc8
+#define NAND_MFR_GIGADEVICE	0xc8
 
 /*
  * A helper for defining older NAND chips where the second ID byte fully
