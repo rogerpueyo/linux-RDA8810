@@ -652,6 +652,19 @@ config ARCH_SHMOBILE
 	help
 	  Support for Renesas's SH-Mobile and R-Mobile ARM platforms.
 
+config ARCH_RDA
+	bool "RDA arch"
+	select PLAT_RDA
+	select CPU_V7
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select CLKSRC_MMIO
+	select ARCH_REQUIRE_GPIOLIB
+	select ARCH_HAS_CPUFREQ
+	select NEED_MACH_GPIO_H
+	help
+	  Support for RDA ARCH
+
 config ARCH_RPC
 	bool "RiscPC"
 	select ARCH_ACORN
@@ -979,6 +992,9 @@ source "arch/arm/mach-pxa/Kconfig"
 source "arch/arm/plat-pxa/Kconfig"
 
 source "arch/arm/mach-mmp/Kconfig"
+
+source "arch/arm/mach-rda/Kconfig"
+source "arch/arm/plat-rda/Kconfig"
 
 source "arch/arm/mach-realview/Kconfig"
 
@@ -1739,6 +1755,7 @@ config FORCE_MAX_ZONEORDER
 	range 11 64 if ARCH_SHMOBILE
 	default "12" if SOC_AM33XX
 	default "9" if SA1111
+	default "12" if ARCH_RDA
 	default "11"
 	help
 	  The kernel memory allocator divides physically contiguous memory
