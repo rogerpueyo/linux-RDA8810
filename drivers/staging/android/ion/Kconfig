@@ -23,3 +23,8 @@ config ION_TEGRA
 	help
 	  Choose this option if you wish to use ion on an nVidia Tegra.
 
+config ION_RDA
+	tristate "Ion for RDA"
+	depends on PLAT_RDA && ION
+	help
+	  Choose this option if you wish to use ion on an RDA Platform.
