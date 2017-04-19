@@ -44,6 +44,9 @@
 
 #include "musb_core.h"
 
+#ifdef CONFIG_USB_MUSB_RDA
+extern void musb_rda_generate_SE0(struct musb *musb);
+#endif
 
 static void musb_port_suspend(struct musb *musb, bool do_suspend)
 {
@@ -158,6 +161,21 @@ static void musb_port_reset(struct musb *musb, bool do_reset)
 		musb_writeb(mbase, MUSB_POWER,
 				power & ~MUSB_POWER_RESET);
 
+#ifdef CONFIG_USB_MUSB_RDA
+		/*
+		 * this is a workaround:
+		 * MUSB core sometimes cannot produce the first SOF, and then
+		 * issue a babble interrupt(when send the 2nd SOF), which cause
+		 * the session is stopped
+		 * Why delay 900us?, because we want to produce the SE0 just
+		 * before the 2nd SOF
+		 */
+		u8 devctl = musb_readb(mbase, MUSB_DEVCTL);
+		if (devctl & MUSB_DEVCTL_LSDEV) {
+			udelay(900);
+			musb_rda_generate_SE0(musb);
+		}
+#endif
 		musb->ignore_disconnect = false;
 
 		power = musb_readb(mbase, MUSB_POWER);
