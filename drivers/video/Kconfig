@@ -2476,6 +2476,7 @@ source "drivers/video/exynos/Kconfig"
 source "drivers/video/mmp/Kconfig"
 source "drivers/video/backlight/Kconfig"
 source "drivers/video/adf/Kconfig"
+source "drivers/video/rda/Kconfig"
 
 if VT
 	source "drivers/video/console/Kconfig"
