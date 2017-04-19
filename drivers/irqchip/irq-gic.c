@@ -363,7 +363,11 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
 static u8 gic_get_cpumask(struct gic_chip_data *gic)
 {
 	void __iomem *base = gic_data_dist_base(gic);
-	u32 mask, i;
+	u32 mask, i,cpu_num;
+
+	cpu_num = (readl_relaxed(gic_data_dist_base(gic) + GIC_DIST_CTR) & 0xe0) >> 5;
+	if (!cpu_num)
+		return 0;
 
 	for (i = mask = 0; i < 32; i += 4) {
 		mask = readl_relaxed(base + GIC_DIST_TARGET + i);
