@@ -367,6 +367,12 @@ static void log_store(int facility, int level,
 	log_next_seq++;
 }
 
+void rda_get_log_buf_info(unsigned int *addr_ptr, unsigned int *len_ptr)
+{
+	*addr_ptr = virt_to_phys(log_buf);
+	*len_ptr = log_buf_len;
+}
+
 #ifdef CONFIG_SECURITY_DMESG_RESTRICT
 int dmesg_restrict = 1;
 #else
