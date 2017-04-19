@@ -185,14 +185,14 @@ __v7_ca7mp_setup:
 __v7_ca15mp_setup:
 	mov	r10, #0
 1:
-#ifdef CONFIG_SMP
+//#ifdef CONFIG_SMP -- according to ARM manual, this SMP bit must be set
 	ALT_SMP(mrc	p15, 0, r0, c1, c0, 1)
 	ALT_UP(mov	r0, #(1 << 6))		@ fake it for UP
 	tst	r0, #(1 << 6)			@ SMP/nAMP mode enabled?
 	orreq	r0, r0, #(1 << 6)		@ Enable SMP/nAMP mode
 	orreq	r0, r0, r10			@ Enable CPU-specific SMP bits
 	mcreq	p15, 0, r0, c1, c0, 1
-#endif
+//#endif
 	b	__v7_setup
 
 __v7_pj4b_setup:
