@@ -37,6 +37,10 @@
 #include <media/videobuf2-core.h>
 #include <media/soc_mediabus.h>
 
+#ifdef CONFIG_ARCH_RDA
+// FIXME: move this into RDA driver
+#include <plat/pm_ddr.h>
+#endif
 /* Default to VGA resolution */
 #define DEFAULT_WIDTH	640
 #define DEFAULT_HEIGHT	480
@@ -607,6 +611,10 @@ static int soc_camera_open(struct file *file)
 	file->private_data = icd;
 	dev_dbg(icd->pdev, "camera device open\n");
 
+#ifdef CONFIG_ARCH_RDA
+	// FIXME: move this into RDA driver
+	vpu_bug_ddr_freq_adjust();
+#endif
 	return 0;
 
 	/*
@@ -656,6 +664,10 @@ static int soc_camera_close(struct file *file)
 
 	dev_dbg(icd->pdev, "camera device close\n");
 
+#ifdef CONFIG_ARCH_RDA
+	// FIXME: move this into RDA driver
+	vpu_bug_ddr_freq_adjust_restore();
+#endif
 	return 0;
 }
 
