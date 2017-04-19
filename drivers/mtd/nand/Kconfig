@@ -494,6 +494,33 @@ config MTD_NAND_MXC
 	  This enables the driver for the NAND flash controller on the
 	  MXC processors.
 
+config MTD_NAND_RDA
+	bool "Support for NAND Flash on RDA Platform"
+	depends on ARCH_RDA
+	help
+ 	  Enables support for NAND Flash on RDA platform.
+
+config MTD_NAND_RDA_V1
+	tristate "Support for RDA NAND Controller V1"
+	depends on MTD_NAND_RDA && ARCH_RDA8810
+	default y
+	help
+ 	  Enables support for RDA NAND Controller V1 for RDA8810
+
+config MTD_NAND_RDA_SPI
+	tristate "Support for SPI NAND Flash on RDA Platform"
+	depends on ARCH_RDA
+	help
+	  Enables support for SPI NAND Flash on RDA platform.
+
+config MTD_NAND_RDA_DMA
+        bool "RDA NAND Direct Memory Access(DMA)"
+        depends on MTD_NAND_RDA || MTD_NAND_RDA_SPI
+        default y
+        help
+          Driver for the NAND flash controller, with DMA.
+          If unsure, say Y
+
 config MTD_NAND_SH_FLCTL
 	tristate "Support for NAND on Renesas SuperH FLCTL"
 	depends on SUPERH || ARCH_SHMOBILE
