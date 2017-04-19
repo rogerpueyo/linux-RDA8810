@@ -730,4 +730,25 @@ static inline int onfi_get_sync_timing_mode(struct nand_chip *chip)
 	return le16_to_cpu(chip->onfi_params.src_sync_timing_mode);
 }
 
+static inline uint32_t mtd_div_by_cs(uint64_t sz, struct mtd_info *mtd)
+{
+	struct nand_chip *chip = mtd->priv;
+
+	if (chip->chipsize >> 32) {
+		//assume the chipsize is not out of 4096TB(4*1024*1024*GB)
+		//4096TB is 52bits.
+		sz >>= 20;
+		if (chip->chip_shift)
+			return sz >> (chip->chip_shift - 20);
+
+		do_div(sz, chip->chipsize >> 20);
+	} else {
+		if (chip->chip_shift)
+			return sz >> chip->chip_shift;
+
+		do_div(sz, chip->chipsize);
+	}
+	return sz;
+}
+
 #endif /* __LINUX_MTD_NAND_H */
