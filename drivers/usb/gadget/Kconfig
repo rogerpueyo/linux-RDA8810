@@ -492,6 +492,11 @@ endmenu
 # USB Gadget Drivers
 #
 
+config RDA_USB_F_MLOG
+	boolean "Rda modem usb trace driver"
+	help
+		modem trace ouput by serial over usb
+
 # composite based drivers
 config USB_LIBCOMPOSITE
 	tristate
