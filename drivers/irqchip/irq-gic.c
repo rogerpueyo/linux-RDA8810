@@ -462,6 +462,24 @@ static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
 	writel_relaxed(1, base + GIC_CPU_CTRL);
 }
 
+// parrotgeek1: this used to be 2 functions
+// FIXME: simplify and move... somewhere else (used in only ap_clk.c)
+void rda_gic_set_gicc_enabled(int enabled)
+{
+	int i;
+	void __iomem *cpu_base;
+
+	for (i = 0; i < MAX_GIC_NR; i++) {
+		cpu_base = gic_data_cpu_base(&gic_data[i]);
+
+		if (!cpu_base)
+			continue;
+
+		writel(enabled, cpu_base + GIC_CPU_CTRL);
+	}
+	dsb();
+}
+
 #ifdef CONFIG_CPU_PM
 /*
  * Saves the GIC distributor registers during suspend or idle.  Must be called
