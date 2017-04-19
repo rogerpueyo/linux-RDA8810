@@ -1,6 +1,28 @@
 #
 # linux/drivers/nand/Makefile
 #
+include $(ANDROID_BUILD_TOP)/$(RDA_TARGET_DEVICE_DIR)/customer.mk
+subdir-ccflags-y := -Werror
+subdir-ccflags-y += -I$(ANDROID_BUILD_TOP)/$(RDA_TARGET_DEVICE_DIR)/include
+
+ifneq ($(BOARD_NAND_PAGE_SIZE),)
+subdir-ccflags-y += -DNAND_PAGE_SIZE=$(BOARD_NAND_PAGE_SIZE)
+endif
+ifneq ($(BOARD_FLASH_BLOCK_SIZE),)
+subdir-ccflags-y += -DNAND_BLOCK_SIZE=$(BOARD_FLASH_BLOCK_SIZE)
+endif
+ifneq ($(BOARD_NAND_SPARE_SIZE),)
+subdir-ccflags-y += -DNAND_SPARE_SIZE=$(BOARD_NAND_SPARE_SIZE)
+endif
+ifneq ($(BOARD_NAND_ECCMSGLEN),)
+subdir-ccflags-y += -DNAND_ECCMSGLEN=$(BOARD_NAND_ECCMSGLEN)
+endif
+ifneq ($(BOARD_NAND_ECCBITS),)
+subdir-ccflags-y += -DNAND_ECCBITS=$(BOARD_NAND_ECCBITS)
+endif
+ifneq ($(BOARD_NAND_OOB_SIZE),)
+subdir-ccflags-y += -DNAND_OOBSIZE=$(BOARD_NAND_OOB_SIZE)
+endif
 
 obj-$(CONFIG_MTD_NAND)			+= nand.o
 obj-$(CONFIG_MTD_NAND_ECC)		+= nand_ecc.o
