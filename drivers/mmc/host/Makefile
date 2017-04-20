@@ -68,3 +68,7 @@ obj-$(CONFIG_MMC_SDHCI_BCM2835)		+= sdhci-bcm2835.o
 ifeq ($(CONFIG_CB710_DEBUG),y)
 	CFLAGS-cb710-mmc	+= -DDEBUG
 endif
+
+ifeq ($(CONFIG_MMC_RDA), y)
+	subdir-ccflags-y += -Iinclude_rda
+endif

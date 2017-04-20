@@ -3,7 +3,7 @@
 #
 
 subdir-ccflags-y := -Werror
-subdir-ccflags-y += -I$(ANDROID_BUILD_TOP)/$(RDA_TARGET_DEVICE_DIR)/include
+subdir-ccflags-y += -Iinclude_rda
 
 # Common support
 obj-y := cpu.o comreg0_misc.o md.o md_sys.o timer.o ifc.o dma.o \

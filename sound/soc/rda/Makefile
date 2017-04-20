@@ -1,5 +1,5 @@
 # rda Platform Support
-subdir-ccflags-y += -I$(ANDROID_BUILD_TOP)/$(RDA_TARGET_DEVICE_DIR)/include
+subdir-ccflags-y += -Iinclude_rda
 obj-$(CONFIG_SND_RDA_SOC_RDASOUNDCARD_PCM)  	+= rda_pcm.o
 obj-$(CONFIG_SND_RDA_SOC_RDASOUNDCARD_PCM)  	+= rda_dsp_aud.o
 obj-$(CONFIG_SND_RDA_SOC_RDASOUNDCARD_PCM)  	+= rda_voice_pcm.o

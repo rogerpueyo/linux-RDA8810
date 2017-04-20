@@ -1,9 +1,9 @@
 #
 # linux/drivers/nand/Makefile
 #
-include $(ANDROID_BUILD_TOP)/$(RDA_TARGET_DEVICE_DIR)/customer.mk
+include customer.mk
 subdir-ccflags-y := -Werror
-subdir-ccflags-y += -I$(ANDROID_BUILD_TOP)/$(RDA_TARGET_DEVICE_DIR)/include
+subdir-ccflags-y +=-Iinclude_rda
 
 ifneq ($(BOARD_NAND_PAGE_SIZE),)
 subdir-ccflags-y += -DNAND_PAGE_SIZE=$(BOARD_NAND_PAGE_SIZE)
