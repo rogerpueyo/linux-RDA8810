@@ -849,7 +849,10 @@ void __init nand_device_init(void)
 {
 	if (rda_nand_spi) {
 		platform_device_register(&rda_spinand);
-	} else if (rda_emmc) {
+	} else {
+		platform_device_register(&rda_nand);
+	}	
+	if (rda_emmc) {
 		int i = 0;
 
 		for(; emmc_mclk_adj_inv[i].mfr_id != 0; i++){
@@ -859,15 +862,14 @@ void __init nand_device_init(void)
 
 		if  (emmc_mclk_adj_inv[i].mfr_id == 0)
 			printk("Can't find suitable emmc mclk adj and clock inv config, use default one.");
-		else{
+		else {
 			rda_mmc2_data[0].mclk_adj = emmc_mclk_adj_inv[i].mclk_adj;
 			rda_mmc2_data[0].clk_inv = emmc_mclk_adj_inv[i].mclk_inv;
 		}
 		platform_device_register(&rda_mmc2);
-	} else if (rda_sdcard) {
-		/*platform_device_register(&rda_mmc0);*/
-	} else {
-		platform_device_register(&rda_nand);
+	}
+	if (rda_sdcard) {
+		/*platform_device_register(&rda_mmc0);*/ // FIXME: why is this commented?
 	}
 }
 
