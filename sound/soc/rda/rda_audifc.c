@@ -42,7 +42,7 @@ static struct rda_audifc_ch *audifc_ch[RDA_AUDIFC_QTY];
 
 static int irq[2];
 
-static irqreturn_t rda_audifc_irq_handler(enum RDA_AUDIFC_REQUEST_ID_T type, int irq, void *channel)
+static irqreturn_t rda_audifc_irq_handler(RDA_AUDIFC_REQUEST_ID_T type, int irq, void *channel)
 {
 	struct rda_audifc_ch *ptr_ch = (struct rda_audifc_ch *)channel;
 	u32 reg;
