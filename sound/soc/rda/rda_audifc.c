@@ -36,142 +36,81 @@
 #include "rda_bb_ifc.h"
 #include "rda_audifc.h"
 
-#define line() printk("[BUDDYAUDIO] [%s %d]\n", __func__, __LINE__)
-
 static HWP_BB_IFC_T __iomem *hwp_audIfc;
 
 static struct rda_audifc_ch *audifc_ch[RDA_AUDIFC_QTY];
 
 static int irq[2];
 
-static irqreturn_t rda_audifc_record_irq_handler(int irq, void *channel)
+static irqreturn_t rda_audifc_irq_handler(int type, int irq, void *channel)
 {
-
 	struct rda_audifc_ch *ptr_ch = (struct rda_audifc_ch *)channel;
 	u32 reg;
 
-    line();
 	if(!ptr_ch || ptr_ch->inuse == IFC_NOUSE)
 		return IRQ_NONE;
 
-    line();
-	reg = hwp_audIfc->ch[RDA_AUDIFC_RECORD].status 
+	reg = hwp_audIfc->ch[type].status 
 			& (BB_IFC_CAUSE_IEF | BB_IFC_CAUSE_IHF | BB_IFC_CAUSE_I4F | BB_IFC_CAUSE_I3_4F);
 
-    line();
-	hwp_audIfc->ch[RDA_AUDIFC_RECORD].int_clear = reg;
+	hwp_audIfc->ch[type].int_clear = reg;
 
-    line();
 	if(ptr_ch->callback == NULL)
 		return IRQ_NONE;
 
-    line();
 	if (reg & BB_IFC_CAUSE_I4F) {
-    line();
-		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_QUARTER_IRQ,
-				 ptr_ch->data);
+		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_QUARTER_IRQ, ptr_ch->data);
 		return IRQ_HANDLED;
 	} else if (reg & BB_IFC_CAUSE_IHF) {
-    line();
 		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_HALF_IRQ, ptr_ch->data);
 		return IRQ_HANDLED;
 	} else if (reg & BB_IFC_CAUSE_I3_4F) {
-    line();
-		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_THREE_QUARTER_IRQ,
-				 ptr_ch->data);
+		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_THREE_QUARTER_IRQ, ptr_ch->data);
 		return IRQ_HANDLED;
 	} else if (reg & BB_IFC_CAUSE_IEF) {
-    line();
 		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_END_IRQ, ptr_ch->data);
 		return IRQ_HANDLED;
 	}
-
-    line();
 	return IRQ_NONE;
 }
 
 static irqreturn_t rda_audifc_play_irq_handler(int irq, void *channel)
 {
-
-	struct rda_audifc_ch *ptr_ch = (struct rda_audifc_ch *)channel;
-	u32 reg;
-
-    line();
-	if(!ptr_ch || ptr_ch->inuse == IFC_NOUSE)
-		return IRQ_NONE;
-
-    line();
-	reg = hwp_audIfc->ch[RDA_AUDIFC_PLAY].status 
-			& (BB_IFC_CAUSE_IEF | BB_IFC_CAUSE_IHF | BB_IFC_CAUSE_I4F | BB_IFC_CAUSE_I3_4F);
-
-    line();
-	hwp_audIfc->ch[RDA_AUDIFC_PLAY].int_clear = reg;
-
-	if(ptr_ch->callback == NULL)
-		return IRQ_NONE;
-
-    line();
-	if (reg & BB_IFC_CAUSE_I4F) {
-    line();
-		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_QUARTER_IRQ,
-				 ptr_ch->data);
-		return IRQ_HANDLED;
-	} else if (reg & BB_IFC_CAUSE_IHF) {
-    line();
-		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_HALF_IRQ, ptr_ch->data);
-		return IRQ_HANDLED;
-	} else if (reg & BB_IFC_CAUSE_I3_4F) {
-    line();
-		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_THREE_QUARTER_IRQ,
-				 ptr_ch->data);
-		return IRQ_HANDLED;
-	} else if (reg & BB_IFC_CAUSE_IEF) {
-    line();
-		ptr_ch->callback(ptr_ch->id, RDA_AUDIFC_END_IRQ, ptr_ch->data);
-		return IRQ_HANDLED;
-	}
-
-    line();
-	return IRQ_NONE;
+	return rda_audifc_irq_handler(RDA_AUDIFC_PLAY, irq, channel);
 }
+
+static irqreturn_t rda_audifc_record_irq_handler(int irq, void *channel)
+{
+	return rda_audifc_irq_handler(RDA_AUDIFC_RECORD, irq, channel);
+}
+
 
 int rda_set_audifc_params(u8 ch, struct rda_audifc_chan_params *params)
 {
-
-    line();
 	if (hwp_audIfc->ch[ch].status & BB_IFC_ENABLE) {
-    line();
 		printk(KERN_INFO "%s:  audio ifc busy  \n", __func__);
 		return RDA_AUDIFC_ERROR;
 	}
-	// Assert on word alignement
 #if 0
+	// Assert on word alignement
 	if (((u32) params->src_addr) % 4 != 0) {
-    line();
 		printk(KERN_INFO "%s: AUDIO IFC transfer start address not aligned: 0x%x", __func__ , (u32)params->src_addr);
-    line();
 		return RDA_AUDIFC_ERROR;
 	}
-    line();
 	// Size must be a multiple of 32 bytes
 	if (((u32) params->xfer_size) % 32 != 0) {
-    line();
 		printk(KERN_INFO "%s: AUDIO IFC transfer size not mult. of 32-bytes: 0x%x", __func__ , (u32)params->xfer_size);
-    line();
 		return RDA_AUDIFC_ERROR;
 	}
 #endif
 
-    line();
 	hwp_audIfc->ch[ch].start_addr = (u32) params->src_addr;
 	hwp_audIfc->ch[ch].Fifo_Size = params->xfer_size;
 
-    line();
 	// we need this four ints !!!!
 	hwp_audIfc->ch[ch].int_mask = BB_IFC_QUARTER_FIFO |
 	    BB_IFC_HALF_FIFO | BB_IFC_THREE_QUARTER_FIFO | BB_IFC_END_FIFO;
 
-    line();
 	return RDA_AUDIFC_NOERR;
 }
 
@@ -183,7 +122,6 @@ audifc_addr_t rda_get_audifc_src_pos(u8 ch)
 
 audifc_addr_t rda_get_audifc_dst_pos(u8 ch)
 {
-    line();
 	return (u32) (hwp_audIfc->ch[ch].cur_ahb_addr);
 }
 
@@ -191,22 +129,17 @@ void rda_start_audifc(u8 ch)
 {
 	enable_irq(irq[ch]);
 	hwp_audIfc->ch[ch].control = BB_IFC_ENABLE;
-    line();
-	return;
 }
 
 void rda_stop_audifc(u8 ch)
 {
 	disable_irq_nosync(irq[ch]);
 	hwp_audIfc->ch[ch].control = BB_IFC_DISABLE;
-    line();
-	return;
 }
 
 void rda_poll_audifc(u8 ch)
 {
-    line();
-	return;
+	// FIXME: remove
 }
 
 int rda_request_audifc(int dev_id, const char *dev_name,
@@ -217,7 +150,6 @@ int rda_request_audifc(int dev_id, const char *dev_name,
 	if(audifc_ch[dev_id]->inuse == IFC_INUSE)
 		rda_stop_audifc(dev_id);
 
-    line();
 	audifc_ch[dev_id]->id = dev_id;
 	audifc_ch[dev_id]->dev_name = dev_name;
 	audifc_ch[dev_id]->callback = callback;
@@ -226,76 +158,59 @@ int rda_request_audifc(int dev_id, const char *dev_name,
 
 	*audifc_ch_out = dev_id;
 
-    line();
 	return 0;
 }
 
 void rda_free_audifc(u8 ch)
 {
-    line();
 	audifc_ch[ch]->dev_name = NULL;
 	audifc_ch[ch]->callback = NULL;
 	audifc_ch[ch]->data = NULL;
 	audifc_ch[ch]->inuse = IFC_NOUSE;
-
-    line();
-	return;
 }
 
 static int rda_audifc_probe(struct platform_device *pdev)
 {
 	struct rda_audifc_device_data *audifc_device;
 	struct resource *mem;
-	//int irq[RDA_AUDIFC_QTY];
 	int ret;
 
-    line();
 	audifc_device = pdev->dev.platform_data;
-    line();
 	if (!audifc_device) {
-    line();
 		dev_err(&pdev->dev,
 			"%s: rda audifc initialized without platform data\n",
 			__func__);
 		return -EINVAL;
 	}
 
-    line();
 	audifc_ch[RDA_AUDIFC_RECORD] = &audifc_device->chan[RDA_AUDIFC_RECORD];
 	audifc_ch[RDA_AUDIFC_RECORD]->id = RDA_AUDIFC_RECORD;
 	audifc_ch[RDA_AUDIFC_RECORD]->dev_name = NULL;
 	audifc_ch[RDA_AUDIFC_RECORD]->callback = NULL;
 	audifc_ch[RDA_AUDIFC_RECORD]->data = NULL;
 
-    line();
 	audifc_ch[RDA_AUDIFC_PLAY] = &audifc_device->chan[RDA_AUDIFC_PLAY];
 	audifc_ch[RDA_AUDIFC_PLAY]->id = RDA_AUDIFC_PLAY;
 	audifc_ch[RDA_AUDIFC_PLAY]->dev_name = NULL;
 	audifc_ch[RDA_AUDIFC_PLAY]->callback = NULL;
 	audifc_ch[RDA_AUDIFC_PLAY]->data = NULL;
 
-    line();
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!mem) {
 		dev_err(&pdev->dev, "%s: no mem resource\n", __func__);
 		return -EINVAL;
 	}
 
-    line();
 	irq[RDA_AUDIFC_RECORD] = platform_get_irq(pdev, RDA_AUDIFC_RECORD);
 	if (irq[RDA_AUDIFC_RECORD] < 0) {
 		return irq[RDA_AUDIFC_RECORD];
 	}
 
-
-    line();
 	irq[RDA_AUDIFC_PLAY] = platform_get_irq(pdev, RDA_AUDIFC_PLAY);
 	if (irq[RDA_AUDIFC_PLAY] < 0) {
 		return irq[RDA_AUDIFC_PLAY];
 	}
 
-
-    line();
 	hwp_audIfc = ioremap(mem->start, resource_size(mem));
 	if (!hwp_audIfc) {
 		dev_err(&pdev->dev, "%s: ioremap fail\n", __func__);
@@ -305,80 +220,56 @@ static int rda_audifc_probe(struct platform_device *pdev)
 	 * The flag, IRQF_TRIGGER_RISING, is not for device.
 	 * It's only for calling mask_irq function to enable interrupt.
 	 */
-    line();
 	ret = request_irq(irq[RDA_AUDIFC_RECORD], rda_audifc_record_irq_handler,
 			  0, "rda-audifc",
 			  (void *)audifc_ch[RDA_AUDIFC_RECORD]);
 	if (ret < 0) {
-    line();
 		dev_err(&pdev->dev, "%s: request record irq fail\n", __func__);
 		iounmap(hwp_audIfc);
 		return ret;
 	}
-    line();
 	disable_irq(irq[RDA_AUDIFC_RECORD]);
-    line();
 
 	ret = request_irq(irq[RDA_AUDIFC_PLAY], rda_audifc_play_irq_handler,
 			  0, "rda-audifc", (void *)audifc_ch[RDA_AUDIFC_PLAY]);
-    line();
 	if (ret < 0) {
-    line();
 		dev_err(&pdev->dev, "%s: request play irq fail\n", __func__);
-    line();
 		iounmap(hwp_audIfc);
 		return ret;
 	}
-    line();
 	disable_irq(irq[RDA_AUDIFC_PLAY]);
-	printk(KERN_INFO"audio ifc : initialized .\n");
 
-    line();
 	return 0;
 }
 
 static int rda_audifc_remove(struct platform_device *pdev)
 {
 	struct resource *io;
-	//int irq[2];
 
-    line();
 	iounmap(hwp_audIfc);
-    line();
 	hwp_audIfc = NULL;
-    line();
 
 	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-    line();
 	release_mem_region(io->start, resource_size(io));
-    line();
 
 	//free record irq
 	irq[RDA_AUDIFC_RECORD] = platform_get_irq(pdev, RDA_AUDIFC_RECORD);
-    line();
 	free_irq(irq[RDA_AUDIFC_RECORD], (void *)audifc_ch[RDA_AUDIFC_RECORD]);
-    line();
 
 	if (audifc_ch[RDA_AUDIFC_RECORD] != NULL) {
-    line();
 		audifc_ch[RDA_AUDIFC_RECORD]->id = RDA_AUDIFC_RECORD;
 		audifc_ch[RDA_AUDIFC_RECORD]->dev_name = NULL;
 		audifc_ch[RDA_AUDIFC_RECORD]->callback = NULL;
 		audifc_ch[RDA_AUDIFC_RECORD]->data = NULL;
 		audifc_ch[RDA_AUDIFC_RECORD]->inuse = IFC_NOUSE;
 		audifc_ch[RDA_AUDIFC_RECORD] = NULL;
-
 	}
-	//free record irq
-    line();
+
+	//free play irq
 	irq[RDA_AUDIFC_PLAY] = platform_get_irq(pdev, RDA_AUDIFC_PLAY);
-    line();
 	free_irq(irq[RDA_AUDIFC_PLAY], (void *)audifc_ch[RDA_AUDIFC_PLAY]);
-    line();
 
 	if (audifc_ch[RDA_AUDIFC_PLAY] != NULL) {
-
-    line();
 		audifc_ch[RDA_AUDIFC_PLAY]->id = RDA_AUDIFC_PLAY;
 		audifc_ch[RDA_AUDIFC_PLAY]->dev_name = NULL;
 		audifc_ch[RDA_AUDIFC_PLAY]->callback = NULL;
@@ -387,7 +278,6 @@ static int rda_audifc_remove(struct platform_device *pdev)
 		audifc_ch[RDA_AUDIFC_PLAY] = NULL;
 	}
 
-    line();
 	return 0;
 }
 
@@ -400,7 +290,6 @@ static struct platform_driver rda_audifc_driver = {
 
 static int __init rda_audifc_init(void)
 {
-    line();
 	return platform_driver_register(&rda_audifc_driver);
 }
 
@@ -408,7 +297,6 @@ module_init(rda_audifc_init);
 
 static void __exit rda_audifc_exit(void)
 {
-    line();
 	platform_driver_unregister(&rda_audifc_driver);
 }
 
